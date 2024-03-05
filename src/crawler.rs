@@ -80,7 +80,13 @@ fn crawl_worker_thread(
 
                 let mut to_visit_val = to_visit.lock().unwrap();
                 for new_url in new_urls {
-                    to_visit_val.push(new_url);
+                    let parsed_url = match Url::parse(&new_url) {
+                        Ok(url) => url,
+                        Err(_) => continue,
+                    };
+                    if parsed_url.domain() == Some(domain) {
+                        to_visit_val.push(new_url);
+                    }
                 }
             }
         }

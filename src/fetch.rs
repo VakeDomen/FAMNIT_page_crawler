@@ -1,5 +1,6 @@
 extern crate hyper;
 extern crate url;
+extern crate hyper_native_tls;
 
 use std::io::Read;
 use std::thread;
@@ -11,7 +12,9 @@ use crate::parse;
 
 use self::hyper::Client;
 use self::hyper::status::StatusCode;
+use self::hyper::net::HttpsConnector;
 use self::url::{ParseResult, Url, UrlParser};
+use self::hyper_native_tls::NativeTlsClient;
 
 const TIMEOUT: u64 = 10;
 
@@ -28,10 +31,10 @@ impl fmt::Display for UrlState {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             UrlState::Accessible(ref url) => format!("!! {}", url).fmt(f),
-            UrlState::BadStatus(ref url, ref status) => format!("x {} ({})", url, status).fmt(f),
-            UrlState::ConnectionFailed(ref url, ref error) => format!("x {} (connection failed) -> {}", url, error).fmt(f),
-            UrlState::TimedOut(ref url) => format!("x {} (timed out)", url).fmt(f),
-            UrlState::Malformed(ref url) => format!("x {} (malformed)", url).fmt(f),
+            UrlState::BadStatus(ref url, ref status) => format!("x ({}) {}", status, url).fmt(f),
+            UrlState::ConnectionFailed(ref url, ref error) => format!("x (connection failed)  {} -> {}", error, url).fmt(f),
+            UrlState::TimedOut(ref url) => format!("x (timed out) {}", url).fmt(f),
+            UrlState::Malformed(ref url) => format!("x (malformed) {}", url).fmt(f),
         }
     }
 }
@@ -55,7 +58,9 @@ pub fn url_status(domain: &str, path: &str) -> UrlState {
             let u = url.clone();
 
             thread::spawn(move || {
-                let client = Client::new();
+                let ssl = NativeTlsClient::new().unwrap();
+                let connector = HttpsConnector::new(ssl);
+                let client = Client::with_connector(connector);
                 let url_string = url.serialize();
                 let resp = client.get(&url_string).send();
 
@@ -81,7 +86,9 @@ pub fn url_status(domain: &str, path: &str) -> UrlState {
 }
 
 pub fn fetch_url(url: &Url) -> String {
-    let client = Client::new();
+    let ssl = NativeTlsClient::new().unwrap();
+    let connector = HttpsConnector::new(ssl);
+    let client = Client::with_connector(connector);
 
     let url_string = url.serialize();
     let mut res = client
