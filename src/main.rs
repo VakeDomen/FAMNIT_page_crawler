@@ -36,4 +36,5 @@ fn main() {
         print!("Succeeded: {} Failed: {}\r", success_count, fail_count);
         stdout().flush().unwrap();
     }
+    print!("Succeeded: {} Failed: {}\r", success_count, fail_count);
 }

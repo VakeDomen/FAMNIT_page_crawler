@@ -58,9 +58,7 @@ pub fn url_status(domain: &str, path: &str) -> UrlState {
             let u = url.clone();
 
             thread::spawn(move || {
-                let ssl = NativeTlsClient::new().unwrap();
-                let connector = HttpsConnector::new(ssl);
-                let client = Client::with_connector(connector);
+                let client = get_client();
                 let url_string = url.serialize();
                 let resp = client.get(&url_string).send();
 
@@ -86,9 +84,7 @@ pub fn url_status(domain: &str, path: &str) -> UrlState {
 }
 
 pub fn fetch_url(url: &Url) -> String {
-    let ssl = NativeTlsClient::new().unwrap();
-    let connector = HttpsConnector::new(ssl);
-    let client = Client::with_connector(connector);
+    let client = get_client();
 
     let url_string = url.serialize();
     let mut res = client
@@ -107,6 +103,12 @@ pub fn fetch_url(url: &Url) -> String {
 pub fn fetch_all_urls(url: &Url) -> Vec<String> {
     let html_src = fetch_url(url);
     let dom = parse::parse_html(&html_src);
-
+    parse::extract_contents(dom.document.clone());
     parse::get_urls(dom.document)
+}
+
+fn get_client() -> Client {
+    let ssl = NativeTlsClient::new().unwrap();
+    let connector = HttpsConnector::new(ssl);
+    Client::with_connector(connector)
 }
