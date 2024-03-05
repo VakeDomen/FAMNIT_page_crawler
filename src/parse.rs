@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fs;
 use std::rc::Rc;
 use std::string::String;
 
@@ -16,7 +17,7 @@ pub fn parse_html(source: &str) -> RcDom {
         .unwrap()
 }
 
-pub fn extract_contents(handle: Handle) -> () {
+pub fn extract_contents(url: String, handle: Handle) -> () {
     
     let anchor_tags = vec![];
     let mut filter = HashMap::new();
@@ -31,9 +32,9 @@ pub fn extract_contents(handle: Handle) -> () {
             serialize(&mut bytes, &n, SerializeOpts::default()).unwrap();
             let result = String::from_utf8(bytes).unwrap();
             let markdown = to_md(&result);
+            fs::write(format!("resources/{}", url.replace("/", "_")), markdown).expect("Unable to write file");
         }
     }
-    
 }
 
 pub fn get_urls(handle: Handle) -> Vec<String> {

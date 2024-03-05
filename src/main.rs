@@ -3,6 +3,7 @@ extern crate url;
 
 use std::io::stdout;
 use std::io::Write;
+use std::vec;
 use url::Url;
 
 use fetch::UrlState;
@@ -21,11 +22,28 @@ fn main() {
 
     let mut success_count = 0;
     let mut fail_count = 0;
+    let mut denied_count = 0;
 
-    for url_state in crawler::crawl(&domain, &start_url) {
+    let url_word_blacklist = vec![
+        "konference".to_owned(),
+        "conference".to_owned(),
+        "resources".to_owned(),
+        "news".to_owned(),
+        "novice".to_owned(),
+        "project".to_owned(),
+        "projekt".to_owned(),
+        "dogodek".to_owned(),
+        "event".to_owned(),
+    ];
+
+    for url_state in crawler::crawl(&domain, &start_url, url_word_blacklist) {
         match url_state {
-            UrlState::Accessible(_) => {
-                success_count += 1;
+            UrlState::Accessible(_, parsed) => {
+                if parsed {
+                    success_count += 1;
+                } else {
+                    denied_count += 1;
+                }
             }
             status => {
                 fail_count += 1;
@@ -33,7 +51,7 @@ fn main() {
             }
         }
 
-        print!("Succeeded: {} Failed: {}\r", success_count, fail_count);
+        print!("Succeeded: {} Failed: {} Denied: {}\r", success_count, fail_count, denied_count);
         stdout().flush().unwrap();
     }
     print!("Succeeded: {} Failed: {}\r", success_count, fail_count);

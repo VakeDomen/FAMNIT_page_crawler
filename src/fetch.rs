@@ -20,7 +20,7 @@ const TIMEOUT: u64 = 10;
 
 #[derive(Debug, Clone)]
 pub enum UrlState {
-    Accessible(Url),
+    Accessible(Url, bool),
     BadStatus(Url, StatusCode),
     ConnectionFailed(Url, String),
     TimedOut(Url),
@@ -30,7 +30,7 @@ pub enum UrlState {
 impl fmt::Display for UrlState {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            UrlState::Accessible(ref url) => format!("!! {}", url).fmt(f),
+            UrlState::Accessible(ref url, ref par) => format!("!! (parsed: {}) {}", par, url).fmt(f),
             UrlState::BadStatus(ref url, ref status) => format!("x ({}) {}", status, url).fmt(f),
             UrlState::ConnectionFailed(ref url, ref error) => format!("x (connection failed)  {} -> {}", error, url).fmt(f),
             UrlState::TimedOut(ref url) => format!("x (timed out) {}", url).fmt(f),
@@ -64,7 +64,7 @@ pub fn url_status(domain: &str, path: &str) -> UrlState {
 
                 let _ = req_tx.send(match resp {
                     Ok(r) => if let StatusCode::Ok = r.status {
-                        UrlState::Accessible(url)
+                        UrlState::Accessible(url, false)
                     } else {
                         UrlState::BadStatus(url, r.status)
                     },
@@ -93,6 +93,7 @@ pub fn fetch_url(url: &Url) -> String {
         .ok()
         .expect("could not fetch URL");
 
+    
     let mut body = String::new();
     match res.read_to_string(&mut body) {
         Ok(_) => body,
@@ -103,7 +104,7 @@ pub fn fetch_url(url: &Url) -> String {
 pub fn fetch_all_urls(url: &Url) -> Vec<String> {
     let html_src = fetch_url(url);
     let dom = parse::parse_html(&html_src);
-    parse::extract_contents(dom.document.clone());
+    parse::extract_contents(url.serialize(), dom.document.clone());
     parse::get_urls(dom.document)
 }
 

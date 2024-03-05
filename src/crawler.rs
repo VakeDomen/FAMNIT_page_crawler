@@ -13,6 +13,7 @@ const THREADS: i32 = 20;
 pub struct Crawler {
     to_visit: Arc<Mutex<Vec<String>>>,
     active_count: Arc<Mutex<i32>>,
+    parsed_count: Arc<Mutex<i32>>,
     url_states: Receiver<UrlState>,
 }
 
@@ -26,6 +27,7 @@ impl Iterator for Crawler {
                 Err(_) => {
                     let to_visit_val = self.to_visit.lock().unwrap();
                     let active_count_val = self.active_count.lock().unwrap();
+                    let parsed_count_val = self.parsed_count.lock().unwrap();
 
                     if to_visit_val.is_empty() && *active_count_val == 0 {
                         return None;
@@ -43,7 +45,9 @@ fn crawl_worker_thread(
     to_visit: Arc<Mutex<Vec<String>>>,
     visited: Arc<Mutex<HashSet<String>>>,
     active_count: Arc<Mutex<i32>>,
+    parsed_count: Arc<Mutex<i32>>,
     url_states: Sender<UrlState>,
+    url_word_blacklist: Vec<String>,
 ) {
     loop {
         let current;
@@ -73,21 +77,44 @@ fn crawl_worker_thread(
             }
         }
 
-        let state = url_status(&domain, &current);
-        if let UrlState::Accessible(ref url) = state.clone() {
+        let mut state = url_status(&domain, &current);
+        if let UrlState::Accessible(ref url, ref mut parsed) = state.clone() {
             if url.domain() == Some(&domain) {
-                let new_urls = fetch_all_urls(&url);
 
-                let mut to_visit_val = to_visit.lock().unwrap();
-                for new_url in new_urls {
-                    let parsed_url = match Url::parse(&new_url) {
-                        Ok(url) => url,
-                        Err(_) => continue,
-                    };
-                    if parsed_url.domain() == Some(domain) {
-                        to_visit_val.push(new_url);
+                let mut should_skip = false;
+                for word in &url_word_blacklist {
+                    if url.serialize().contains(word) {
+                        should_skip = true;
+                        break;
                     }
                 }
+
+                if !should_skip {
+                    // continue;
+                    println!("SUCCESS: {}", url);
+                    let new_urls = fetch_all_urls(&url);
+    
+
+                    {
+                        let mut parsed_count_val = parsed_count.lock().unwrap();
+                        *parsed_count_val += 1;
+                        state = UrlState::Accessible(url.clone(), true);
+                    }
+
+                    let mut to_visit_val = to_visit.lock().unwrap();
+                    for new_url in new_urls {
+                        let parsed_url = match Url::parse(&new_url) {
+                            Ok(url) => url,
+                            Err(_) => continue,
+                        };
+                        if parsed_url.domain() == Some(domain) {
+                            to_visit_val.push(new_url);
+                        }
+                    }
+                } else {
+                    // println!("SKIPPED: {}", url);
+                }
+
             }
         }
 
@@ -101,9 +128,14 @@ fn crawl_worker_thread(
     }
 }
 
-pub fn crawl(domain: &str, start_url: &Url) -> Crawler {
+pub fn crawl(
+    domain: &str, 
+    start_url: &Url, 
+    url_word_blacklist: Vec<String>
+) -> Crawler {
     let to_visit = Arc::new(Mutex::new(vec![start_url.serialize()]));
     let active_count = Arc::new(Mutex::new(0));
+    let parsed_count = Arc::new(Mutex::new(0));
     let visited = Arc::new(Mutex::new(HashSet::new()));
 
     let (tx, rx) = channel();
@@ -111,6 +143,7 @@ pub fn crawl(domain: &str, start_url: &Url) -> Crawler {
     let crawler = Crawler {
         to_visit: to_visit.clone(),
         active_count: active_count.clone(),
+        parsed_count: parsed_count.clone(),
         url_states: rx,
     };
 
@@ -119,10 +152,19 @@ pub fn crawl(domain: &str, start_url: &Url) -> Crawler {
         let to_visit = to_visit.clone();
         let visited = visited.clone();
         let active_count = active_count.clone();
+        let parsed_count = parsed_count.clone();
         let tx = tx.clone();
-
+        let blacklist = url_word_blacklist.clone();
         thread::spawn(move || {
-            crawl_worker_thread(&domain, to_visit, visited, active_count, tx);
+            crawl_worker_thread(
+                &domain, 
+                to_visit, 
+                visited, 
+                active_count, 
+                parsed_count,
+                tx, 
+                blacklist,
+            );
         });
     }
 
