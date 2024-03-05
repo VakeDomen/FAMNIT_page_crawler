@@ -1,4 +1,3 @@
-use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::string::String;
@@ -18,30 +17,35 @@ pub fn parse_html(source: &str) -> RcDom {
 }
 
 pub fn extract_contents(handle: Handle) -> () {
+    
     let anchor_tags = vec![];
     let mut filter = HashMap::new();
     filter.insert("class".to_owned(), "content".to_owned());
     let mut store = Store::Node(anchor_tags);
+
     get_elements_by_name(handle, "div", &mut store, Some(filter));
+    
     if let Store::Node(elts) = store {
         for n in elts {
             let mut bytes = vec![];
             serialize(&mut bytes, &n, SerializeOpts::default()).unwrap();
             let result = String::from_utf8(bytes).unwrap();
-            println!("{}", result);
-            
+            let markdown = to_md(&result);
         }
     }
     
 }
 
 pub fn get_urls(handle: Handle) -> Vec<String> {
+
     let mut urls = vec![];
     let anchor_tags = vec![];
     let mut filter = HashMap::new();
     filter.insert("class".to_owned(), "content".to_owned());
     let mut store = Store::Data(anchor_tags);
+    
     get_elements_by_name(handle, "a", &mut store, None);
+    
     if let Store::Data(elts) = store {
         for node in elts {
             if let NodeData::Element { ref attrs, .. } = node {
