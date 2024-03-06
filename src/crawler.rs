@@ -48,6 +48,7 @@ fn crawl_worker_thread(
     parsed_count: Arc<Mutex<i32>>,
     url_states: Sender<UrlState>,
     url_word_blacklist: Vec<String>,
+    save_md: bool,
 ) {
     loop {
         let current;
@@ -91,8 +92,7 @@ fn crawl_worker_thread(
 
                 if !should_skip {
                     // continue;
-                    println!("SUCCESS: {}", url);
-                    let new_urls = fetch_all_urls(&url);
+                    let new_urls = fetch_all_urls(&url, save_md);
     
 
                     {
@@ -111,10 +111,7 @@ fn crawl_worker_thread(
                             to_visit_val.push(new_url);
                         }
                     }
-                } else {
-                    // println!("SKIPPED: {}", url);
                 }
-
             }
         }
 
@@ -131,7 +128,8 @@ fn crawl_worker_thread(
 pub fn crawl(
     domain: &str, 
     start_url: &Url, 
-    url_word_blacklist: Vec<String>
+    url_word_blacklist: Vec<String>,
+    save_md: bool,
 ) -> Crawler {
     let to_visit = Arc::new(Mutex::new(vec![start_url.serialize()]));
     let active_count = Arc::new(Mutex::new(0));
@@ -164,6 +162,7 @@ pub fn crawl(
                 parsed_count,
                 tx, 
                 blacklist,
+                save_md,
             );
         });
     }

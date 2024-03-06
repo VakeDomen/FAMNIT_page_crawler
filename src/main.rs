@@ -34,15 +34,21 @@ fn main() {
         "projekt".to_owned(),
         "dogodek".to_owned(),
         "event".to_owned(),
+        "delavnice".to_owned(),
+        "workshop".to_owned(),
+        "volitve".to_owned(),
+        
     ];
 
-    for url_state in crawler::crawl(&domain, &start_url, url_word_blacklist) {
+    for url_state in crawler::crawl(&domain, &start_url, url_word_blacklist, false) {
         match url_state {
-            UrlState::Accessible(_, parsed) => {
+            UrlState::Accessible(url, parsed) => {
                 if parsed {
                     success_count += 1;
+                    println!("(parsed: 200) {}", url);
                 } else {
                     denied_count += 1;
+                    println!("(skipped: 200) {}", url);
                 }
             }
             status => {
@@ -51,8 +57,8 @@ fn main() {
             }
         }
 
-        print!("Succeeded: {} Failed: {} Denied: {}\r", success_count, fail_count, denied_count);
         stdout().flush().unwrap();
     }
+    print!("Succeeded: {} Failed: {} Denied: {}\r", success_count, fail_count, denied_count);
     print!("Succeeded: {} Failed: {}\r", success_count, fail_count);
 }

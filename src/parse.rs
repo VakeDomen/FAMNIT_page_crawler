@@ -41,8 +41,6 @@ pub fn get_urls(handle: Handle) -> Vec<String> {
 
     let mut urls = vec![];
     let anchor_tags = vec![];
-    let mut filter = HashMap::new();
-    filter.insert("class".to_owned(), "content".to_owned());
     let mut store = Store::Data(anchor_tags);
     
     get_elements_by_name(handle, "a", &mut store, None);
@@ -56,7 +54,15 @@ pub fn get_urls(handle: Handle) -> Vec<String> {
                         ref value,
                     } = *attr;
                     if &*(name.local) == "href" {
-                        urls.push(value.to_string());
+                        let mut url_string = value.to_string();
+                        if url_string.contains("#") {
+                            url_string = url_string
+                                .split("#")
+                                .nth(0)
+                                .unwrap_or("")
+                                .to_string();
+                        }
+                        urls.push(url_string);
                     }
                 }
             }

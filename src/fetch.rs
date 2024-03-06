@@ -101,10 +101,12 @@ pub fn fetch_url(url: &Url) -> String {
     }
 }
 
-pub fn fetch_all_urls(url: &Url) -> Vec<String> {
+pub fn fetch_all_urls(url: &Url, save_md: bool) -> Vec<String> {
     let html_src = fetch_url(url);
     let dom = parse::parse_html(&html_src);
-    parse::extract_contents(url.serialize(), dom.document.clone());
+    if save_md {
+        parse::extract_contents(url.serialize(), dom.document.clone());
+    }
     parse::get_urls(dom.document)
 }
 
