@@ -13,7 +13,7 @@ mod fetch;
 mod crawler;
 
 fn main() {
-    let start_url_string = "https://www.famnit.upr.si";
+    let start_url_string = "https://www.famnit.upr.si/en/about-faculty/staff/";
 
     let start_url = Url::parse(start_url_string).unwrap();
     let domain = start_url
@@ -37,10 +37,9 @@ fn main() {
         "delavnice".to_owned(),
         "workshop".to_owned(),
         "volitve".to_owned(),
-        
     ];
 
-    for url_state in crawler::crawl(&domain, &start_url, url_word_blacklist, false) {
+    for url_state in crawler::crawl(&domain, &start_url, url_word_blacklist, true) {
         match url_state {
             UrlState::Accessible(url, parsed) => {
                 if parsed {

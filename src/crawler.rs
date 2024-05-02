@@ -108,7 +108,9 @@ fn crawl_worker_thread(
                             Err(_) => continue,
                         };
                         if parsed_url.domain() == Some(domain) {
-                            to_visit_val.push(new_url);
+                            if parsed_url.serialize().contains("staff") {
+                                to_visit_val.push(new_url);
+                            }
                         }
                     }
                 }

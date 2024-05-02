@@ -21,11 +21,9 @@ pub fn extract_contents(url: String, handle: Handle) -> () {
     
     let anchor_tags = vec![];
     let mut filter = HashMap::new();
-    filter.insert("class".to_owned(), "content".to_owned());
+    filter.insert("id".to_owned(), "content".to_owned());
     let mut store = Store::Node(anchor_tags);
-
     get_elements_by_name(handle, "div", &mut store, Some(filter));
-    
     if let Store::Node(elts) = store {
         for n in elts {
             let mut bytes = vec![];
@@ -61,6 +59,14 @@ pub fn get_urls(handle: Handle) -> Vec<String> {
                                 .nth(0)
                                 .unwrap_or("")
                                 .to_string();
+                        }
+                        if !url_string.contains("https://www.famnit.upr.si/en") {
+                            let splitter = if url_string.starts_with("/") {
+                                ""
+                            } else {
+                                "/"
+                            };
+                            url_string = format!("https://www.famnit.upr.si{}{}", splitter, url_string)
                         }
                         urls.push(url_string);
                     }
