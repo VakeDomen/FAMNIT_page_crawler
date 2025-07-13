@@ -7,7 +7,9 @@ edition = "2021"
 
 [dependencies]
 hyper = "0.10.1"
-html5ever = "0.21.0"
+html5ever = "0.29.0"
 url = "0.2.37"
 html2md = "0.2.14"
 hyper-native-tls = "0.3.0"
+markup5ever_rcdom = "0.3.0"
+tendril = "0.4.3"

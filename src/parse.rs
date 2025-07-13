@@ -1,21 +1,26 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, io::Sink};
 use std::fs;
 use std::rc::Rc;
 use std::string::String;
 
-use html5ever::tendril::TendrilSink;
-use html5ever::parse_document;
-use html5ever::rcdom::{Handle, Node, NodeData, RcDom};
-use html5ever::interface::Attribute;
-use html2md::parse_html as to_md;
-use html5ever::serialize::{SerializeOpts, serialize};
 
-pub fn parse_html(source: &str) -> RcDom {
-    parse_document(RcDom::default(), Default::default())
-        .from_utf8()
-        .read_from(&mut source.as_bytes())
-        .unwrap()
-}
+
+
+use html5ever::tree_builder::TreeBuilderOpts;
+use html5ever::{parse_document, Attribute, ParseOpts, Parser};
+use markup5ever_rcdom::Node;
+use rcdom::{Handle, NodeData, RcDom, SerializableHandle};
+
+
+use html5ever::serialize::{SerializeOpts, serialize};
+use html2md::parse_html as to_md;
+
+// pub fn parse_html(source: &str) -> Parser<Sink> {
+//     parse_document(RcDom::default(), Default::default())
+//         .from_utf8()
+//         .read_from(&mut source.as_bytes())
+//         .unwrap().document;
+// }
 
 pub fn extract_contents(url: String, handle: Handle) -> () {
     
@@ -33,6 +38,28 @@ pub fn extract_contents(url: String, handle: Handle) -> () {
             fs::write(format!("resources/{}", url.replace("/", "_")), markdown).expect("Unable to write file");
         }
     }
+}
+
+fn ser(source: &str, url: String) {
+    let opts = ParseOpts {
+        tree_builder: TreeBuilderOpts {
+            drop_doctype: true,
+            ..Default::default()
+        },
+        ..Default::default()
+    };
+    let dom = parse_document(RcDom::default(), opts)
+        .from_utf8()
+        .read_from(source)
+        .unwrap();
+
+    // The validator.nu HTML2HTML always prints a doctype at the very beginning.
+    // io::stdout()
+    //     .write_all(b"<!DOCTYPE html>\n")
+    //     .expect("writing DOCTYPE failed");
+    let document: SerializableHandle = dom.document.clone().into();
+    fs::write(format!("resources/{}", url.replace("/", "_")), document).expect("Unable to write file");
+    // serialize(&mut io::stdout(), &document, Default::default()).expect("serialization failed");
 }
 
 pub fn get_urls(handle: Handle) -> Vec<String> {

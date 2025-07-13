@@ -1,5 +1,7 @@
+#[macro_use]
 extern crate html5ever;
-extern crate url;
+extern crate markup5ever_rcdom as rcdom;
+
 
 use std::io::stdout;
 use std::io::Write;
